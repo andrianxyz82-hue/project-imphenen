@@ -21,3 +21,7 @@
 
 # Lottie
 -keep class com.airbnb.lottie.** { *; }
+
+# Google Play Core / Split Install (Flutter Deferred Components)
+-dontwarn com.google.android.play.core.**
+-dontwarn io.flutter.embedding.engine.deferredcomponents.**
