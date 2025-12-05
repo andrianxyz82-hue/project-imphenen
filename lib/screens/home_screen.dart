@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:camera/camera.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../widgets/analysis_sheet.dart';
 import '../widgets/compare_sheet.dart';
 import '../widgets/chat_sheet.dart';
@@ -19,8 +21,53 @@ class _HomeScreenState extends State<HomeScreen> {
   ViewMode _viewMode = ViewMode.camera;
   final DraggableScrollableController _chatController = DraggableScrollableController();
   bool _isChatExpanded = false;
+  CameraController? _cameraController;
+  bool _isCameraInitialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeCamera();
+  }
+
+  Future<void> _initializeCamera() async {
+    var status = await Permission.camera.request();
+    if (status.isGranted) {
+      final cameras = await availableCameras();
+      if (cameras.isNotEmpty) {
+        // Optimization: Use ResolutionPreset.medium for low-end devices
+        _cameraController = CameraController(
+          cameras.first,
+          ResolutionPreset.medium,
+          enableAudio: false,
+        );
+
+        await _cameraController!.initialize();
+        if (mounted) {
+          setState(() {
+            _isCameraInitialized = true;
+          });
+        }
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _cameraController?.dispose();
+    super.dispose();
+  }
 
   void _captureAndAnalyze() async {
+    if (_cameraController != null && _cameraController!.value.isInitialized) {
+      try {
+        // Optional: Take picture here if needed for backend
+        // final image = await _cameraController!.takePicture();
+      } catch (e) {
+        debugPrint('Error taking picture: $e');
+      }
+    }
+
     setState(() {
       _viewMode = ViewMode.analyzing;
     });
@@ -75,6 +122,55 @@ class _HomeScreenState extends State<HomeScreen> {
     } else {
       _chatController.animateTo(
         0.9,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
+  }
+
+  Future<bool> _onWillPop() async {
+    if (_viewMode == ViewMode.compare || _viewMode == ViewMode.chat) {
+      _backToAnalysis();
+      return false;
+    } else if (_viewMode == ViewMode.analysis) {
+      _reset();
+      return false;
+    }
+    return true;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    bool showOverlay = _viewMode == ViewMode.analysis || _viewMode == ViewMode.compare || _viewMode == ViewMode.chat;
+
+    return WillPopScope(
+      onWillPop: _onWillPop,
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        body: Stack(
+          children: [
+            // 1. Camera Viewfinder (Background)
+            Positioned.fill(
+              child: _isCameraInitialized
+                  ? CameraPreview(_cameraController!)
+                  : Image.asset(
+                      'assets/product.png',
+                      fit: BoxFit.cover,
+                    ).animate().blur(begin: const Offset(0, 0), end: const Offset(4, 4)),
+            ),
+            
+            // Darken overlay when showing results
+            if (showOverlay)
+              Positioned.fill(
+                child: Container(color: Colors.black.withOpacity(0.3))
+                    .animate()
+                    .fadeIn(),
+              ),
+
+            // 2. Camera UI Overlay (Visible when NOT showing result)
+            if (_viewMode == ViewMode.camera) ...[
+              // Top Bar
+              Positioned(
                 top: 60,
                 left: 24,
                 right: 24,
