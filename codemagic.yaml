@@ -29,4 +29,6 @@ workflows:
       email:
         recipients:
           - user@example.com
-        notify: success
+        notify:
+          success: true
+          failure: true
