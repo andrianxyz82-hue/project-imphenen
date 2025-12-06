@@ -6,7 +6,16 @@ import '../utils/api_constants.dart';
 
 class GeminiService {
   GeminiService() {
-    print('HuggingFace Service Initialized with Token: ${ApiConstants.huggingFaceToken.substring(0, 5)}...');
+    // Debug logging to verify environment variables
+    print('🔍 GeminiService Initialized');
+    print('🔑 Gemini API Key length: ${ApiConstants.geminiApiKey.length}');
+    print('🔑 HuggingFace Token length: ${ApiConstants.huggingFaceToken.length}');
+    
+    if (ApiConstants.huggingFaceToken.isEmpty) {
+      print('❌ WARNING: HuggingFace token is EMPTY! Check environment variables.');
+    } else {
+      print('✅ HuggingFace token loaded: ${ApiConstants.huggingFaceToken.substring(0, 5)}...');
+    }
   }
 
   Future<Map<String, dynamic>> analyzeImage(XFile imageFile) async {
