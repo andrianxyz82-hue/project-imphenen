@@ -41,6 +41,8 @@ dependencies:
   camera: ^0.10.5+9
   permission_handler: ^11.0.1
   lottie: ^3.1.2
+  google_generative_ai: ^0.4.7
+  http: ^1.6.0
 
 dev_dependencies:
   flutter_test:

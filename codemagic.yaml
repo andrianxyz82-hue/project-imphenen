@@ -1,6 +1,6 @@
 workflows:
   android-release:
-    name: Android Release Build
+    name: Android Release Build (Optimized)
     max_build_duration: 60
     instance_type: mac_mini_m1
     environment:
@@ -9,6 +9,11 @@ workflows:
       flutter: stable
       xcode: latest
       cocoapods: default
+      vars:
+        # Add your API keys as environment variables in Codemagic UI:
+        # Settings > Environment variables > Add variable
+        GEMINI_API_KEY: $GEMINI_API_KEY
+        HUGGINGFACE_TOKEN: $HUGGINGFACE_TOKEN
     scripts:
       - name: Set up local.properties
         script: |
@@ -16,18 +21,24 @@ workflows:
       - name: Get Flutter packages
         script: |
           flutter packages pub get
-      - name: Build Android Release APK
+      - name: Build Optimized Android Release APK
         script: |
-          # Build optimized release APK
-          # --release: Enables code shrinking and obfuscation (R8)
-          # --obfuscate --split-debug-info: Reduces size by removing debug symbols
-          flutter build apk --release --obfuscate --split-debug-info=./debug-info
+          # Build highly optimized release APK with minimal size
+          # Pass environment variables to Flutter build
+          flutter build apk --release \
+            --dart-define=GEMINI_API_KEY=$GEMINI_API_KEY \
+            --dart-define=HUGGINGFACE_TOKEN=$HUGGINGFACE_TOKEN \
+            --obfuscate \
+            --split-debug-info=./debug-info \
+            --target-platform android-arm,android-arm64 \
+            --shrink
     artifacts:
-      - build/app/outputs/flutter-apk/app-release.apk
+      - build/app/outputs/flutter-apk/*.apk
+      - debug-info/**/* # Upload debug symbols for crash reporting
     publishing:
       email:
         recipients:
-          - user@example.com
+          - buikpinhek@gmail.com # Update with your email
         notify:
           success: true
           failure: true

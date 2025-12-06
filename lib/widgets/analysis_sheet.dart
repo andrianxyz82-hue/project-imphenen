@@ -7,25 +7,34 @@ class AnalysisSheet extends StatelessWidget {
   final ScrollController scrollController;
   final VoidCallback? onComparePressed;
   final VoidCallback? onAskAIPressed;
+  final Map<String, dynamic>? analysisData;
 
   const AnalysisSheet({
     super.key, 
     required this.scrollController,
     this.onComparePressed,
     this.onAskAIPressed,
+    this.analysisData,
   });
 
   @override
   Widget build(BuildContext context) {
+    // Default / Loading State
+    final String name = analysisData?['productName'] ?? 'Menganalisis...';
+    final String priceRange = analysisData?['priceRange'] ?? 'Rp -';
+    final String desc = analysisData?['description'] ?? 'Sedang memproses data visual...';
+    final String accuracy = analysisData?['accuracy'] ?? 'High';
+    
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black12,
-            blurRadius: 20,
-            spreadRadius: 5,
+            color: Colors.black26, // Darker shadow for better separation
+            blurRadius: 25,
+            spreadRadius: 2,
+            offset: Offset(0, -5), // Shadow upwards to separate from image
           ),
         ],
       ),
@@ -47,32 +56,47 @@ class AnalysisSheet extends StatelessWidget {
           
           // Header
           Row(
+            crossAxisAlignment: CrossAxisAlignment.center, // Ensure vertical center alignment
             children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: Image.asset(
-                  'assets/product.png',
-                  width: 80,
-                  height: 80,
-                  fit: BoxFit.cover,
+              Container( // Wrap in container for shadow/border if needed for neatness
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 10,
+                      spreadRadius: 1,
+                    ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: Image.asset(
+                    'assets/product.png', // Ideally this follows the captured image too, but for now asset fallback is safer for UI demo
+                    width: 80,
+                    height: 80,
+                    fit: BoxFit.cover,
+                  ),
                 ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 20), // Increased spacing for breathability
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      'Kamera Antik',
+                      name,
                       style: GoogleFonts.inter(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
                         color: Colors.black87,
+                        height: 1.2,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
                         color: Colors.green[50],
                         borderRadius: BorderRadius.circular(20),
@@ -82,9 +106,9 @@ class AnalysisSheet extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           const Icon(LucideIcons.sparkles, size: 14, color: Colors.green),
-                          const SizedBox(width: 4),
+                          const SizedBox(width: 6),
                           Text(
-                            'Akurasi 98%',
+                            'Akurasi $accuracy',
                             style: GoogleFonts.inter(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
@@ -106,7 +130,7 @@ class AnalysisSheet extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildMetric('Harga Pasar', 'Rp 2.5jt', LucideIcons.tag),
+              _buildMetric('Est. Harga', _formatCompactPrice(priceRange), LucideIcons.tag),
               _buildMetric('Terjual/Mgg', '124', LucideIcons.shoppingBag),
               _buildMetric('Rating', '4.8', LucideIcons.star),
             ],
@@ -118,58 +142,63 @@ class AnalysisSheet extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                decoration: BoxDecoration(
-                  color: Colors.lightBlue,
-                  borderRadius: BorderRadius.circular(30),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.lightBlue.withOpacity(0.3),
-                      blurRadius: 10,
-                      spreadRadius: 2,
+              Expanded( // Make it full width/expanded for symmetry if desired, or keep centered.
+                child: Center(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF10B981),
+                      borderRadius: BorderRadius.circular(30),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF10B981).withOpacity(0.3),
+                          blurRadius: 10,
+                          spreadRadius: 2,
+                        ),
+                      ],
                     ),
-                  ],
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                         Text(
+                          'Analisis AI', // Slightly more descriptive
+                          style: GoogleFonts.inter(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                         Image.asset(
+                          'assets/icons/update-removebg-preview.png',
+                          width: 24,
+                          height: 24,
+                          fit: BoxFit.contain,
+                          errorBuilder: (context, error, stackTrace) => const Icon(LucideIcons.sparkles, color: Colors.white, size: 20),
+                        ),
+                      ],
+                    ),
+                  ).animate(onPlay: (c) => c.repeat(reverse: true)).scale(begin: const Offset(1, 1), end: const Offset(1.05, 1.05), duration: 2.seconds),
                 ),
-                child: Row(
-                  children: [
-                    Text(
-                      'Analisis',
-                      style: GoogleFonts.inter(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Image.asset(
-                      'assets/icons/update-removebg-preview.png',
-                      width: 24,
-                      height: 24,
-                      fit: BoxFit.contain,
-                      errorBuilder: (context, error, stackTrace) => const Icon(LucideIcons.sparkles, color: Colors.white, size: 20),
-                    ),
-                  ],
-                ),
-              ).animate(onPlay: (c) => c.repeat(reverse: true)).scale(begin: const Offset(1, 1), end: const Offset(1.05, 1.05), duration: 2.seconds),
+              ),
             ],
           ),
           const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.lightBlue,
+              color: const Color(0xFF10B981),
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.lightBlue.withOpacity(0.3),
+                  color: const Color(0xFF10B981).withOpacity(0.3),
                   blurRadius: 10,
                   spreadRadius: 2,
                 ),
               ],
             ),
             child: Text(
-              'Barang ini memiliki permintaan tinggi di kategori elektronik antik. Penjualan mingguan stabil, dan minat pembeli cenderung naik. Disarankan untuk menjual di marketplace khusus.',
+              desc,
               style: GoogleFonts.inter(
                 fontSize: 14,
                 height: 1.5,
@@ -210,14 +239,14 @@ class AnalysisSheet extends StatelessWidget {
           ElevatedButton(
             onPressed: onAskAIPressed,
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.lightBlue,
+              backgroundColor: const Color(0xFF10B981),
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
               elevation: 5,
-              shadowColor: Colors.lightBlue.withOpacity(0.5),
+              shadowColor: const Color(0xFF10B981).withOpacity(0.5),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -313,6 +342,34 @@ class AnalysisSheet extends StatelessWidget {
         ),
       ],
     );
+  }
+  
+  // Helper to format string with numbers to compact format (e.g., 2.500.000 -> 2.5jt)
+  String _formatCompactPrice(String raw) {
+    return raw.replaceAllMapped(RegExp(r'\b\d{1,3}(?:\.\d{3})+(?:,\d+)?\b|\b\d{4,}\b'), (match) {
+      String numberStr = match.group(0)!;
+      String cleanStr = numberStr.replaceAll('.', '').replaceAll(',', '');
+      try {
+        double value = double.parse(cleanStr);
+        if (value >= 1000000) {
+          double millions = value / 1000000;
+          String s = millions.toStringAsFixed(1);
+          if (s.endsWith('.0')) s = s.substring(0, s.length - 2);
+          return '${s}jt';
+        } else if (value >= 1000) {
+          double thousands = value / 1000;
+          String s = thousands.toStringAsFixed(0);
+          if (value % 1000 != 0) {
+             s = thousands.toStringAsFixed(1);
+             if (s.endsWith('.0')) s = s.substring(0, s.length - 2);
+          }
+          return '${s}k';
+        }
+        return numberStr;
+      } catch (e) {
+        return numberStr;
+      }
+    });
   }
 
   Widget _buildMarketplaceCard(String name, String status, Color color, String assetPath) {

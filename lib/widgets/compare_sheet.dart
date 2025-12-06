@@ -15,6 +15,26 @@ class CompareSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Mock Data for Comparison
+    final List<Map<String, dynamic>> marketData = [
+      {'name': 'Tokopedia', 'price': 2850000, 'icon': 'assets/icons/tokopedia.png'},
+      {'name': 'Shopee',    'price': 2600000, 'icon': 'assets/icons/shopee.png'},
+      {'name': 'Lazada',    'price': 2450000, 'icon': 'assets/icons/lazada.png'},
+      {'name': 'TikTok',    'price': 2700000, 'icon': 'assets/icons/tiktok_shop.png'},
+      {'name': 'Facebook',  'price': 2100000, 'icon': 'assets/icons/facebook.png'},
+    ];
+
+    // Find highest price for scaling and highlighting
+    double maxPrice = 0;
+    Map<String, dynamic> highestMarket = marketData[0];
+    
+    for (var data in marketData) {
+      if (data['price'] > maxPrice) {
+        maxPrice = (data['price'] as int).toDouble();
+        highestMarket = data;
+      }
+    }
+
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
@@ -61,10 +81,10 @@ class CompareSheet extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.blue[50],
+                  color: const Color(0xFF10B981).withOpacity(0.1),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(LucideIcons.barChart2, color: Colors.blue),
+                child: const Icon(LucideIcons.barChart2, color: Color(0xFF10B981)),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -94,9 +114,64 @@ class CompareSheet extends StatelessWidget {
 
           const SizedBox(height: 32),
 
-          // Price Graph Mock
+          // Insight Summary Box
           Container(
-            height: 200,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFF10B981),
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF10B981).withOpacity(0.3),
+                  blurRadius: 10,
+                  spreadRadius: 2,
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(LucideIcons.trendingUp, color: Colors.white, size: 20),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Potensi Tertinggi',
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          color: Colors.white70,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      Text(
+                        '${highestMarket['name']} memiliki harga pasar tertinggi Rp ${_formatPriceShort(highestMarket['price'])}.',
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          height: 1.2,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ).animate(delay: 100.ms).fadeIn().slideY(),
+
+          const SizedBox(height: 24),
+
+          // Price Graph
+          Container(
+            height: 280, // Increased height to prevent overflow
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: Colors.grey[50],
@@ -106,24 +181,34 @@ class CompareSheet extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Tren Harga Pasar',
-                  style: GoogleFonts.inter(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Grafik Harga Rata-rata',
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    Text(
+                      '30 Hari Terakhir',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        color: Colors.grey[500],
+                      ),
+                    ),
+                  ],
                 ),
                 const Spacer(),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    _buildBar(0.4, 'assets/icons/tokopedia.png', 'Tokopedia', '40%'),
-                    _buildBar(0.7, 'assets/icons/shopee.png', 'Shopee', '70%'),
-                    _buildBar(0.5, 'assets/icons/lazada.png', 'Lazada', '50%'),
-                    _buildBar(0.8, 'assets/icons/tiktok_shop.png', 'TikTok', '80%'),
-                    _buildBar(0.3, 'assets/icons/facebook.png', 'Facebook', '30%'),
-                  ],
+                  children: marketData.map((data) {
+                    bool isHighest = data == highestMarket;
+                    double heightFactor = (data['price'] as int) / maxPrice;
+                    return _buildBar(heightFactor, data['icon'], data['name'], data['price'] as int, isHighest);
+                  }).toList(),
                 ),
               ],
             ),
@@ -151,39 +236,56 @@ class CompareSheet extends StatelessWidget {
     );
   }
 
-  Widget _buildBar(double heightFactor, String assetPath, String label, String percentage) {
+  Widget _buildBar(double heightFactor, String assetPath, String label, int price, bool isHighest) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
         Text(
-          percentage,
+          _formatPriceShort(price),
           style: GoogleFonts.inter(
             fontSize: 10,
             fontWeight: FontWeight.bold,
-            color: Colors.grey[600],
+            color: isHighest ? const Color(0xFF10B981) : Colors.grey[600],
           ),
         ),
         const SizedBox(height: 4),
         Container(
-          width: 8,
-          height: 100 * heightFactor,
+          width: 36, // Slightly wider bars
+          height: 120 * heightFactor,
           decoration: BoxDecoration(
-            color: heightFactor < 0.5 ? Colors.red : Colors.green,
-            borderRadius: BorderRadius.circular(4),
+            color: isHighest ? const Color(0xFF10B981) : Colors.grey[300],
+            borderRadius: BorderRadius.circular(8),
+            boxShadow: isHighest ? [
+              BoxShadow(
+                color: const Color(0xFF10B981).withOpacity(0.3),
+                blurRadius: 8,
+                spreadRadius: 1,
+                offset: const Offset(0, 2),
+              )
+            ] : null,
           ),
         ),
         const SizedBox(height: 8),
-        Image.asset(assetPath, width: 20, height: 20),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: GoogleFonts.inter(
-            fontSize: 10,
-            color: Colors.grey[600],
-          ),
+        Image.asset(
+          assetPath, 
+          width: 20, 
+          height: 20, 
+          errorBuilder: (c,e,s) => const Icon(Icons.store, size: 20, color: Colors.grey),
         ),
+        const SizedBox(height: 4),
+        // Use Logo or Short Name only to avoid clutter
       ],
     );
+  }
+
+  // Helper to format price to "2.8jt"
+  String _formatPriceShort(int price) {
+    if (price >= 1000000) {
+      double simplified = price / 1000000;
+      // Remove trailing zero if whole number (e.g. 2.0 -> 2)
+      return simplified.toStringAsFixed(simplified.truncateToDouble() == simplified ? 0 : 1) + 'jt';
+    }
+    return (price / 1000).toStringAsFixed(0) + 'rb';
   }
 
   Widget _buildCompetitorRow(String name, String price, String rating, bool isCheapest, String assetPath) {

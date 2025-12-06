@@ -8,6 +8,7 @@ import 'package:permission_handler/permission_handler.dart';
 import '../widgets/analysis_sheet.dart';
 import '../widgets/compare_sheet.dart';
 import '../widgets/chat_sheet.dart';
+import '../services/gemini_service.dart';
 
 enum ViewMode { camera, analyzing, analysis, compare, chat }
 
@@ -60,28 +61,41 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
+  final GeminiService _geminiService = GeminiService();
+  Map<String, dynamic>? _analysisResult;
+
   void _captureAndAnalyze() async {
     if (_cameraController != null && _cameraController!.value.isInitialized) {
       try {
         await _cameraController!.pausePreview();
-        // Optional: Take picture here if needed for backend
-        // final image = await _cameraController!.takePicture();
+        setState(() {
+          _viewMode = ViewMode.analyzing;
+        });
+
+        // Capture image
+        final XFile image = await _cameraController!.takePicture();
+        
+        // Analyze with Gemini
+        final result = await _geminiService.analyzeImage(image);
+
+        if (mounted) {
+          setState(() {
+            _analysisResult = result;
+            _viewMode = ViewMode.analysis;
+          });
+        }
       } catch (e) {
-        debugPrint('Error taking picture: $e');
+        debugPrint('Error analyzing: $e');
+        if (mounted) {
+           setState(() {
+            _viewMode = ViewMode.camera;
+            _cameraController?.resumePreview();
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Gagal menganalisis gambar. Coba lagi.')),
+          );
+        }
       }
-    }
-
-    setState(() {
-      _viewMode = ViewMode.analyzing;
-    });
-
-    // Simulate AI Analysis
-    await Future.delayed(const Duration(seconds: 2));
-
-    if (mounted) {
-      setState(() {
-        _viewMode = ViewMode.analysis;
-      });
     }
   }
 
@@ -171,7 +185,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Container(
                   color: Color.lerp(
                     Colors.black.withOpacity(0.3),
-                    const Color(0xFF03A9F4), // Light Blue (match theme/buttons)
+                    const Color(0xFF10B981).withOpacity(0.3), // Emerald Green (Wealth & Trust)
                     ((_sheetExtent - 0.85) / (0.92 - 0.85)).clamp(0.0, 1.0),
                   ),
                 ).animate().fadeIn(),
@@ -201,7 +215,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   decoration: BoxDecoration(
-                    color: Colors.lightBlue,
+                    color: const Color(0xFF10B981),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Row(
@@ -249,10 +263,10 @@ class _HomeScreenState extends State<HomeScreen> {
                           height: 80,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: Colors.lightBlue, // Accent color for capture
+                            color: const Color(0xFF10B981), // Accent color for capture
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.lightBlue.withOpacity(0.3),
+                                color: const Color(0xFF10B981).withOpacity(0.3),
                                 blurRadius: 15,
                                 spreadRadius: 5,
                               ),
@@ -306,6 +320,27 @@ class _HomeScreenState extends State<HomeScreen> {
                 ).animate().fadeIn(),
               ),
 
+            // Gradient Shadow for Separation
+            if (showOverlay)
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                height: MediaQuery.of(context).size.height * 0.4,
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        Colors.black.withOpacity(0.8),
+                      ],
+                    ),
+                  ),
+                ).animate().fadeIn(),
+              ),
+
             // 4. Analysis Result Bottom Sheet
             if (_viewMode == ViewMode.analysis)
               NotificationListener<DraggableScrollableNotification>(
@@ -329,6 +364,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       scrollController: scrollController,
                       onComparePressed: _showCompare,
                       onAskAIPressed: _showChat,
+                      analysisData: _analysisResult,
                     );
                   },
                 ),

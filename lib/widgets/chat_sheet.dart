@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import '../services/gemini_service.dart';
 
 class ChatSheet extends StatefulWidget {
   final ScrollController scrollController;
@@ -19,8 +20,11 @@ class ChatSheet extends StatefulWidget {
   State<ChatSheet> createState() => _ChatSheetState();
 }
 
+
+
 class _ChatSheetState extends State<ChatSheet> {
   final TextEditingController _textController = TextEditingController();
+  final GeminiService _geminiService = GeminiService();
   final List<Map<String, dynamic>> _messages = [
     {
       'isUser': false,
@@ -35,7 +39,7 @@ class _ChatSheetState extends State<ChatSheet> {
     'Cek Tren',
   ];
 
-  void _sendMessage(String text) {
+  void _sendMessage(String text) async {
     if (text.trim().isEmpty) return;
 
     setState(() {
@@ -43,17 +47,27 @@ class _ChatSheetState extends State<ChatSheet> {
     });
     _textController.clear();
 
-    // Simulate AI Response
-    Future.delayed(const Duration(seconds: 1), () {
+    // Send to Gemini
+    try {
+      final response = await _geminiService.chat(text);
       if (mounted) {
         setState(() {
           _messages.add({
             'isUser': false,
-            'text': 'Tentu, berikut adalah saran saya berdasarkan data pasar terkini...',
+            'text': response,
           });
         });
       }
-    });
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _messages.add({
+            'isUser': false,
+            'text': 'Maaf, terjadi kesalahan saat menghubungi AI.',
+          });
+        });
+      }
+    }
   }
 
   @override
@@ -156,7 +170,7 @@ class _ChatSheetState extends State<ChatSheet> {
                     margin: const EdgeInsets.only(bottom: 16),
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     decoration: BoxDecoration(
-                      color: isUser ? Colors.lightBlue : Colors.grey[100],
+                      color: isUser ? const Color(0xFF10B981) : Colors.grey[100],
                       borderRadius: BorderRadius.only(
                         topLeft: const Radius.circular(20),
                         topRight: const Radius.circular(20),
@@ -193,7 +207,7 @@ class _ChatSheetState extends State<ChatSheet> {
                       color: Colors.white,
                       fontWeight: FontWeight.w600,
                     ),
-                    backgroundColor: Colors.lightBlue,
+                    backgroundColor: const Color(0xFF10B981),
                     side: BorderSide.none,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
@@ -236,7 +250,7 @@ class _ChatSheetState extends State<ChatSheet> {
                   onPressed: () => _sendMessage(_textController.text),
                   icon: const Icon(LucideIcons.send),
                   style: IconButton.styleFrom(
-                    backgroundColor: Colors.lightBlue,
+                    backgroundColor: const Color(0xFF10B981),
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.all(12),
                   ),
